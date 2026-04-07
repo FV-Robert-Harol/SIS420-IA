@@ -1,0 +1,61 @@
+1. Origen y Propósito del Estudio
+
+Origen: Este conjunto de datos, conocido comúnmente como "Census Income Dataset" o "Adult", fue extraído por el investigador Barry Becker de la base de datos oficial del Censo de los Estados Unidos del año 1994, y posteriormente donado al repositorio de Machine Learning de la UCI (Universidad de California, Irvine).
+
+Propósito: Proveer una base de datos demográfica del mundo real para desarrollar y probar algoritmos de clasificación. El objetivo principal de este dataset es predecir si los ingresos anuales de una persona superan los 50.000 dólares basándose únicamente en sus datos censales (como su educación, edad, estado civil, ocupación, etc.).
+
+2. Estructura de Descarga y Cómo Proceder (¡Paso Crítico!)
+A diferencia de Kaggle, los datasets de la UCI tienen un formato más crudo y académico. Al entrar al repositorio te encontrarás con varios archivos, siendo estos los principales:
+
+adult.data: Este es tu archivo de entrenamiento. Contiene decenas de miles de filas. Aunque no termine en ".csv", sus datos están separados por comas. Lo puedes cargar en Pandas usando pd.read_csv('adult.data', header=None). Ojo: no tiene los nombres de las columnas incluidos en la primera fila; tendrás que pasárselos tú manualmente en una lista cuando lo leas con Pandas.
+
+adult.test: Este es tu archivo de prueba. Tiene la misma estructura que el anterior, pero al cargarlo debes tener cuidado porque suele incluir una fila de advertencia al inicio o puntos al final de las etiquetas de texto que debes limpiar.
+
+adult.names: Es un archivo de texto simple que sirve como manual de instrucciones. Aquí se explican los detalles estadísticos y los nombres originales de las variables.
+
+¿Cómo se procede antes del Machine Learning?
+
+Trampas de Nulos: En este dataset, los valores nulos (datos que el censo no pudo recolectar) no aparecen como "NaN" o espacios vacíos, sino que están camuflados con un signo de interrogación acompañado de un espacio: " ?". Tu primer paso con Pandas debe ser usar la función .replace(' ?', np.nan) para que Python los reconozca como nulos reales y puedas decidir si eliminas esas filas o las imputas con la moda estadística.
+
+3. Significado de las Filas
+En este conjunto de datos, cada fila representa a un único individuo (un adulto) que participó en el censo estadounidense de 1994. Si lees una fila completa de izquierda a derecha, estás viendo una "fotografía" de la situación demográfica, familiar y laboral de una persona específica en ese año.
+
+4. Diccionario de Datos (Todas las columnas a detalle)
+Cuando cargues tu archivo, le deberás asignar exactamente estas 15 columnas. Aquí te explico detalladamente qué es cada una y cómo debes tratarla, sin omitir ninguna:
+
+age (edad): La edad del individuo. Es una variable numérica continua. Para usarla en PyTorch, debes estandarizarla (ej. usando StandardScaler) para que no domine sobre los números pequeños del dataset.
+
+workclass (clase laboral): El sector en el que trabaja la persona (ej. Privado, Gobierno local, Autoempleado, Sin pago). Es una variable categórica en texto. Debes aplicarle "One-Hot Encoding" usando Pandas (pd.get_dummies()). Es una de las columnas que esconde valores nulos marcados con " ?".
+
+fnlwgt (peso final): Es una estimación estadística creada por los demógrafos del censo que indica a cuántas personas de la población real de EE. UU. representa esta única fila. Es un número muy grande y continuo. (Dato Pro): La inmensa mayoría de los científicos de datos eliminan esta columna antes de entrenar, ya que es un peso poblacional y no tiene poder predictivo directo sobre el talento o el ingreso de ese individuo en particular.
+
+education (nivel educativo): El grado más alto de educación formal alcanzado (ej. Bachillerato, Maestría, Doctorado, grados de primaria). Es texto, por lo que es una variable categórica.
+
+education-num (número de educación): Es exactamente lo mismo que la columna "education", pero ya convertida a un número continuo por los creadores del dataset (ej. tener un Doctorado es un 16, acabar la preparatoria es un 9). (Dato Pro): Al ser idéntica a "education" pero en formato numérico, genera multicolinealidad. Debes eliminar la columna de texto "education" y quedarte solo con esta para ahorrarle trabajo y complejidad a tu red neuronal.
+
+marital-status (estado civil): Situación conyugal (ej. Casado con cónyuge civil, Soltero/Nunca casado, Divorciado). Variable categórica que requiere One-Hot Encoding.
+
+occupation (ocupación): El tipo de trabajo específico que realiza (ej. Soporte técnico, Ventas, Reparación, Directivo). Variable categórica. Esta es la columna que más valores nulos (" ?") contiene en todo el dataset.
+
+relationship (relación familiar): El rol de la persona respecto a su núcleo familiar (ej. Esposo, Esposa, Hijo propio, No está en una familia). Variable categórica, requiere One-Hot Encoding.
+
+race (raza): La raza con la que se identifica el individuo (ej. Blanco, Asiático/Isleño del Pacífico, Negro, Amerindio). Variable categórica.
+
+sex (sexo): El género de la persona (Femenino o Masculino). Como solo tiene dos categorías, puedes mapearla directamente a números (0 y 1) sin necesidad de crear múltiples columnas.
+
+capital-gain (ganancia de capital): Dinero extra ganado por inversiones financieras o venta de propiedades, expresado en dólares. Es numérica continua. (Ojo: notarás que la gran mayoría de las personas tienen un "0" aquí).
+
+capital-loss (pérdida de capital): Dinero perdido en inversiones financieras, en dólares. Es numérica continua y también estará repleta de ceros.
+
+hours-per-week (horas semanales): La cantidad de horas que la persona declara trabajar a la semana. Es numérica continua y requiere estandarización.
+
+native-country (país de origen): El país de nacimiento del individuo. Variable categórica. (Ojo: tiene una altísima concentración de datos en "United-States", lo que la hace una variable muy desbalanceada. Si no quieres tener 40 columnas nuevas de países al hacer el One-Hot Encoding, puedes agruparla previamente creando solo dos categorías: "USA" y "Otros").
+
+income (ingreso): Esta es tu variable objetivo (tu "Y"). Viene en formato de texto indicando si la persona gana más de 50 mil dólares al año (">50K") o si gana 50 mil o menos ("<=50K"). Debes transformarla a 1 (para >50K) y 0 (para <=50K) antes de dársela a PyTorch.
+
+5. Propósito para Machine Learning
+Basado en las capacidades de PyTorch y el enfoque de estudio, este dataset está diseñado para lo siguiente:
+
+Clasificación Binaria: Este es posiblemente el dataset académico más famoso del mundo para practicar problemas binarios. Tu red neuronal tendrá que usar todas las características procesadas para predecir a qué grupo pertenece la persona (clase 0 o clase 1). Usarás una capa lineal al final con una función Sigmoide y medirás el error con BCELoss (Binary Cross Entropy Loss).
+
+El Reto Principal (Desbalanceo de clases): Te darás cuenta rápidamente de que aproximadamente el 75% de las personas en este dataset ganan 50K o menos (clase 0). Si tu modelo es perezoso y predice siempre "0", obtendrá un 75% de precisión (Accuracy) sin haber aprendido absolutamente nada. Esto te obligará a usar métricas más avanzadas (como F1-Score o Recall) y a aplicar técnicas en PyTorch para penalizar los errores en la clase minoritaria (por ejemplo, usando BCEWithLogitsLoss configurando el parámetro pos_weight).
