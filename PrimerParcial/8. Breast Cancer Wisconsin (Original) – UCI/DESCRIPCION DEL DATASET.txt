@@ -1,0 +1,44 @@
+1. Origen y Propósito del Estudio
+ "Breast Cancer Wisconsin (Original)", extraje del repositorio de la UCI, encontré que estos datos fueron recopilados a principios de los años 90 por el Dr. William H. Wolberg en los Hospitales de la Universidad de Wisconsin.
+
+ propósito al usar este dataset es construir y entrenar un modelo de Machine Learning capaz de analizar las características citológicas (de las células) extraídas de un tumor de mama mediante una biopsia, para predecir con alta precisión si el tumor es benigno o maligno. Es una herramienta clásica de diagnóstico asistido por computadora.
+
+2. Estructura de Descarga y Cómo Proceder
+Al descargar los datos, obtuve un archivo plano llamado breast-cancer-wisconsin.data. Como es habitual en la UCI, este archivo no contiene los nombres de las cabeceras en la primera fila. Para cargarlo en mi entorno de trabajo, utilicé Pandas con el parámetro header=None y luego tuve que asignar manualmente los nombres de las columnas basándome en el diccionario de datos oficial.
+
+Durante mi fase de exploración (EDA), descubrí un detalle crítico: aunque todas las características médicas están en una escala del 1 al 10, hay datos faltantes. El problema es que no están registrados como espacios vacíos o nulos convencionales, sino que aparecen como un signo de interrogación ("?"). Para evitar que PyTorch colapse o que Pandas lea la columna como texto, mi primer paso de preprocesamiento fue usar .replace('?', np.nan) y luego decidir si eliminaba esas 16 filas defectuosas o imputaba los valores con la mediana.
+
+3. Significado de las Filas
+Al observar el DataFrame, comprendí que cada fila representa una única muestra de tejido mamario extraída de un paciente específico a través de una técnica médica llamada aspiración con aguja fina. Todos los números de esa fila son la evaluación visual que hizo el patólogo bajo el microscopio sobre las células de ese tejido.
+
+4. Diccionario de Datos (Todas las columnas a detalle)
+Para estructurar mi modelo, definí exactamente 11 columnas. Aquí presento mi análisis sobre cada una de ellas y cómo decidí procesarlas:
+
+Sample code number (ID del paciente): Es un número de identificación único para cada muestra analizada. En mi preprocesamiento, determiné que esta columna es ruido puro. No tiene ninguna relación médica con el cáncer, por lo que la eliminé de mi conjunto de entrenamiento para evitar que el modelo intente buscar patrones falsos en números de identificación.
+
+Clump Thickness (Grosor del agrupamiento): Evaluado del 1 al 10. Las células benignas tienden a agruparse en monocapas, mientras que las cancerosas se agrupan en múltiples capas. La trataré como una variable numérica continua.
+
+Uniformity of Cell Size (Uniformidad del tamaño celular): Evaluada del 1 al 10. En mi investigación médica básica, noté que las células cancerosas varían drásticamente de tamaño en comparación con las sanas. Variable numérica continua.
+
+Uniformity of Cell Shape (Uniformidad de la forma celular): Evaluada del 1 al 10. Similar al tamaño, las células malignas pierden su forma regular. Variable numérica continua.
+
+Marginal Adhesion (Adhesión marginal): Evaluada del 1 al 10. Las células normales tienden a mantenerse juntas firmemente; las cancerosas pierden esta propiedad para poder invadir otros tejidos. Variable numérica continua.
+
+Single Epithelial Cell Size (Tamaño de la célula epitelial individual): Evaluada del 1 al 10. Un tamaño significativamente agrandado es un fuerte indicador de malignidad. Variable numérica continua.
+
+Bare Nuclei (Núcleos desnudos): Evaluada del 1 al 10. Nota importante: Aquí es exactamente donde encontré los valores nulos camuflados como "?". Una vez limpios, la mantendré como variable numérica. Los núcleos que no están rodeados de citoplasma son típicos en tumores benignos, pero la escala evalúa su anormalidad.
+
+Bland Chromatin (Cromatina blanda): Evaluada del 1 al 10. Describe la textura del núcleo. Las células benignas tienen una cromatina fina y uniforme, mientras que las malignas la tienen gruesa. Variable numérica continua.
+
+Normal Nucleoli (Nucléolos normales): Evaluada del 1 al 10. En células normales, el nucléolo es casi invisible. En células cancerosas se vuelve muy prominente. Variable numérica continua.
+
+Mitoses (Mitosis): Evaluada del 1 al 10. Es un conteo de la actividad de división celular. Un valor alto es peligroso porque el cáncer se caracteriza por la multiplicación descontrolada. Variable numérica continua.
+
+Class (Clase del tumor): Esta es mi variable objetivo ("Y"). Al cargar los datos crudos, vi que los tumores benignos vienen marcados con el número 2 y los malignos con el número 4. Para mi red neuronal en PyTorch, esto es problemático. Transformé esta columna mapeando el 2 a 0 (clase negativa) y el 4 a 1 (clase positiva).
+
+5. Propósito para Machine Learning
+Mi objetivo final con este dataset es ejecutar una tarea pura de Clasificación Binaria.
+
+A diferencia de los datasets financieros que estuve revisando, este conjunto es sumamente amigable para el entrenamiento: todas las variables predictoras (después de quitar el ID) ya son numéricas y operan exactamente en la misma escala (del 1 al 10). Por lo tanto, no tuve que aplicar complicados procesos de "One-Hot Encoding", y el escalado (StandardScaler) aunque es una buena práctica, no fue tan estrictamente urgente como en datos donde se combinan edades con ingresos millonarios.
+
+Mi foco de evaluación en el modelo no será solo la precisión general (Accuracy), sino minimizar a toda costa los Falsos Negativos (usando métricas como el Recall). En el contexto médico que estoy abordando, predecir erróneamente que un tumor maligno es benigno tendría consecuencias fatales, por lo que ajustaré los umbrales de mi modelo en PyTorch con esto en mente.
