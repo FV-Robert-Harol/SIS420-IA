@@ -1,0 +1,109 @@
+1. Origen y Propósito del Estudio
+Origen: Fue desarrollado por el Laboratorio de Fisiología Computacional del MIT (Instituto Tecnológico de Massachusetts), en colaboración con el Centro Médico Beth Israel Deaconess (BIDMC) y la plataforma PhysioNet.
+
+Propósito: Brindar a los investigadores médicos e ingenieros de IA acceso gratuito (bajo un acuerdo de uso de datos) a registros de salud electrónicos desidentificados de pacientes ingresados en Unidades de Cuidados Intensivos (UCI). Su objetivo es desarrollar algoritmos que ayuden a la toma de decisiones clínicas, predecir mortalidad, detectar sepsis o estimar el tiempo de estancia hospitalaria.
+
+Nota sobre la Demo: La versión "Demo 1.4" que tienes en el enlace contiene exactamente la misma estructura que la base de datos real, pero limitada a solo 100 pacientes. Esto es perfecto para tu examen, ya que pesa muy poco y te permite programar todo el código localmente.
+
+2. Estructura de Descarga y Cómo Proceder (¡Paso Crítico!)
+A diferencia de los datasets normales, MIMIC-III NO es un solo archivo .csv. Cuando lo descargas, obtienes un archivo comprimido (.zip) que al descomprimirlo revela más de 20 archivos .csv separados. Es una base de datos relacional.
+
+Los archivos clave que te vas a encontrar son:
+
+PATIENTS.csv: Contiene datos estáticos del paciente (fecha de nacimiento, género, fecha de muerte si aplica).
+
+ADMISSIONS.csv: Contiene información sobre cada vez que el paciente entró al hospital (hora de entrada, tipo de admisión, raza, y si falleció durante esa admisión).
+
+DIAGNOSES_ICD.csv: Contiene los códigos de las enfermedades que se le diagnosticaron.
+
+LABEVENTS.csv / CHARTEVENTS.csv: Contienen miles de filas con los resultados de laboratorio (glucosa, ritmo cardíaco, etc.) medidos minuto a minuto.
+
+¿Cómo se procede antes del Machine Learning?
+Tú no le puedes pasar 20 archivos a PyTorch. Tienes que usar Pandas para unir (merge) estas tablas usando sus "llaves" o identificadores.
+
+Cargaremos PATIENTS.csv y ADMISSIONS.csv.
+La decisión de no integrar el resto de las tablas (como CHARTEVENTS.csv, LABEVENTS.csv, PRESCRIPTIONS.csv o NOTEEVENTS.csv) se fundamenta en las siguientes restricciones de Arquitectura de Modelado y Dimensionalidad:
+
+A. Incompatibilidad Arquitectónica (Datos Estáticos vs. Secuenciales): Los modelos requeridos en este temario (Regresión Logística y Redes Neuronales Densas / Feedforward con capas nn.Linear en PyTorch) están diseñados matemáticamente para procesar datos tabulares de longitud fija. Es decir, requieren que cada paciente (fila) tenga exactamente el mismo número de columnas (características). Archivos como CHARTEVENTS contienen Series de Tiempo (múltiples mediciones de ritmo cardíaco en diferentes horas para un mismo paciente). Procesar secuencias temporales de longitud variable requiere arquitecturas avanzadas de Deep Learning que están fuera del alcance actual, como Redes Neuronales Recurrentes (RNN), LSTMs o Transformers.
+
+B. Riesgo de Explosión Cartesiana y Fuga de Memoria:
+Tablas como LABEVENTS o CHARTEVENTS contienen millones de registros (incluso en subconjuntos pequeños). Intentar hacer un join (cruce) relacional de estas tablas de alta frecuencia con la tabla de ADMISSIONS generaría un producto cartesiano que desvirtuaría la unidad de análisis (1 fila dejaría de ser 1 paciente y pasaría a ser 1 minuto de 1 paciente). Esto colapsaría la memoria RAM en un entorno de ejecución local e impediría el entrenamiento usando el Descenso por el Gradiente (SGD o Adam).
+
+C. Procesamiento de Lenguaje Natural (NLP):
+Tablas como NOTEEVENTS.csv contienen texto libre redactado por médicos. Para que una red neuronal densa procese esto, requeriría un preprocesamiento masivo de Tokenización e incrustación de palabras (Word Embeddings), lo cual corresponde al área de NLP, y no a modelos de clasificación predictiva tabular.
+Usarás pd.merge(pacientes, admisiones, on='SUBJECT_ID') para unirlas. La columna SUBJECT_ID (ID del paciente) es la llave maestra que conecta todos los archivos.
+
+Una vez que unas los datos que te interesan en un solo gran DataFrame (una sola tabla), borras las columnas de ID y recién ahí tienes tu dataset listo para limpiar nulos y aplicar Machine Learning.
+
+3. Significado de las Filas (Tras la unión)
+Una vez que cruzas los datos con Pandas, lo estándar en la industria es estructurar el dataset final de modo que cada fila represente una única Admisión Hospitalaria (identificada internamente por el HADM_ID). Es decir, una fila = la visita de un paciente al hospital desde que entra hasta que sale (o fallece).
+
+4. Diccionario de Datos (Columnas más importantes)
+Al unir las tablas principales, te quedarás con columnas como estas:
+Entendido, sin tablas. Aquí tienes la explicación de cada columna en formato de texto simple:
+
+Archivo PATIENTS.csv
+Contiene la información demográfica básica y única de cada paciente.
+
+ROW_ID: Es simplemente un número identificador para organizar cada fila dentro del archivo.
+
+SUBJECT_ID: Es el identificador único del paciente. Es el número más importante aquí, ya que te servirá para identificar a la misma persona en cualquier otro archivo.
+
+GENDER: El género del paciente (generalmente 'M' para masculino y 'F' para femenino).
+
+DOB: La fecha de nacimiento del paciente (Date of Birth).
+
+DOD: La fecha de fallecimiento (Date of Death). Si este espacio está en blanco, significa que el paciente no ha fallecido.
+
+DOD_HOSP: La fecha de fallecimiento si esta ocurrió específicamente dentro del hospital.
+
+DOD_SSN: La fecha de fallecimiento registrada en el Seguro Social (si ocurrió fuera del hospital).
+
+EXPIRE_FLAG: Es un indicador numérico simple. Un "1" significa que el paciente falleció, y un "0" significa que sigue vivo.
+
+Archivo ADMISSIONS.csv
+Registra cada vez que un paciente ingresa al hospital. Un paciente puede tener varias filas aquí si fue hospitalizado varias veces.
+
+ROW_ID: Identificador numérico de la fila en este archivo.
+
+SUBJECT_ID: El identificador del paciente (el mismo que en el archivo anterior, sirve para cruzar los datos).
+
+HADM_ID: Es el identificador único del ingreso hospitalario (Hospital Admission ID). Cada vez que alguien pisa el hospital, se genera uno nuevo.
+
+ADMITTIME: La fecha y la hora exacta en la que el paciente entró al hospital.
+
+DISCHTIME: La fecha y la hora en la que el paciente fue dado de alta y salió del hospital.
+
+DEATHTIME: La fecha y hora de la muerte, pero solo si el paciente falleció durante esa hospitalización en específico.
+
+ADMISSION_TYPE: El tipo de ingreso (por ejemplo, si fue por emergencia, urgente o una cirugía programada/electiva).
+
+ADMISSION_LOCATION: Desde dónde llegó el paciente (por ejemplo, si vino de urgencias o fue transferido de otra clínica).
+
+DISCHARGE_LOCATION: Hacia dónde se fue el paciente tras recibir el alta (a su casa, a un centro de rehabilitación, etc.).
+
+INSURANCE: El tipo de seguro médico o cobertura que usó para ese ingreso.
+
+LANGUAGE: El idioma que habla el paciente.
+
+RELIGION: La religión reportada por el paciente.
+
+MARITAL_STATUS: El estado civil del paciente en ese momento.
+
+ETHNICITY: El origen étnico o raza del paciente.
+
+EDREGTIME: La hora en la que se registró en la sala de emergencias.
+
+EDOUTTIME: La hora en la que salió de la sala de emergencias.
+
+DIAGNOSIS: El diagnóstico inicial. Es un texto corto que escribe el médico explicando por qué ingresó la persona.
+
+HOSPITAL_EXPIRE_FLAG: Un "1" si el paciente falleció durante este ingreso al hospital, y un "0" si sobrevivió para ser dado de alta.
+
+HAS_CHARTEVENTS_DATA: Un "1" o "0" que te dice si existen datos detallados de la Unidad de Cuidados Intensivos (UCI) para esta hospitalización.
+5. Propósito para Machine Learning
+Dado tu temario, el mejor uso (y el más clásico en la literatura médica) para este dataset estructurado es:
+
+Clasificación Binaria (02_clasificacion_binaria_pytorch.ipynb / Regresión Logística): Predicción de Mortalidad Intrahospitalaria. Usando las características del paciente y de su ingreso, el modelo predice si el paciente sobrevivirá (0) o fallecerá (1). Es el equivalente médico perfecto a tu ejercicio de MiniBooNE (Señal vs Ruido).
+
+Clasificación Multiclase (03_clasificacion_multiclase_pytorch.ipynb): Predecir el rango de tiempo de estancia en la UCI. Puedes crear una variable que clasifique la estancia en 3 clases: "Corta (0-2 días)", "Media (3-7 días)" y "Larga (+7 días)" y usar una red neuronal con Softmax al final.

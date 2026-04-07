@@ -1,0 +1,10 @@
+num	Dataset				Tipo			Problema
+1	Ames Housing		REGRESIÓN		Predecir precio de casas
+2	MIMIC-III		Clasificación Binaria	Mortalidad hospitalaria
+3	VOCWB_L			Clasificación Binaria	Riesgo colesterol alto
+4	Bike Sharing		REGRESIÓN		Cantidad de alquileres
+5	Adult Census		Clasificación Binaria	Ingresos >50K
+6	Credit Approval		Clasificación Binaria	Aprobar/rechazar crédito
+7	Australian Credit	Clasificación Binaria	Crédito (versión limpia)
+8	Breast Cancer		Clasificación Binaria	Tumor benigno/maligno
+9	Meningitis		MULTICLASE		Nivel de riesgo (3 clases)

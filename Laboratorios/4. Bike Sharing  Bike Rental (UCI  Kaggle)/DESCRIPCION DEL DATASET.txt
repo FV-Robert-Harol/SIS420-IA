@@ -1,0 +1,56 @@
+1. Origen y Propósito del Estudio
+
+Origen: Los datos fueron proporcionados por el programa de bicicletas compartidas Capital Bikeshare de la ciudad de Washington, D.C. (EE. UU.), y adaptados para esta competencia de Kaggle por investigadores de la Universidad de Oporto.
+
+Propósito: Combinar los registros históricos de uso de las bicicletas con los datos meteorológicos y de calendario. El objetivo es que los científicos de datos desarrollen algoritmos capaces de predecir la demanda total de alquileres por hora. Esto es vital para las empresas de movilidad, ya que les permite saber cuántas bicicletas deben colocar en las estaciones para evitar que los clientes se queden sin transporte o que las estaciones se saturen.
+
+Nota sobre los datos: Abarcan un periodo de dos años. Los primeros 19 días de cada mes se usan para el conjunto de entrenamiento (donde sabes cuántas bicicletas se alquilaron), y del día 20 hasta el final del mes se usan para el conjunto de prueba (donde debes predecir el número).
+
+2. Estructura de Descarga y Cómo Proceder (¡Paso Crítico!)
+A diferencia de MIMIC-III, este no es un sistema de bases de datos relacionales con decenas de archivos. Al descargar, obtendrás archivos planos y directos. Los clave son:
+
+train.csv: Contiene tus datos de entrenamiento con todas las respuestas (clima, fechas y la cantidad de bicicletas alquiladas).
+
+test.csv: Son los datos sobre los que tienes que hacer tus predicciones finales. Carece de las respuestas (no tiene las columnas de usuarios, ni el conteo total).
+
+¿Cómo se procede antes del Machine Learning?
+
+El gran peligro (Data Leakage): En tu archivo train.csv vas a ver las columnas "casual" y "registered". La suma de estas dos siempre da la columna "count" (tu variable objetivo). ¡Tú no le puedes pasar estas dos columnas a PyTorch! En el mundo real (y en tu archivo test.csv), no sabrás cuántos usuarios casuales o registrados van a llegar en el futuro. Debes eliminar "casual" y "registered" antes de entrenar tu modelo, o este hará trampa y fallará miserablemente en producción.
+
+Procesamiento del Tiempo: No puedes pasarle a tu red neuronal un texto que diga "2011-01-01 05:00:00". Debes usar Pandas (pd.to_datetime) para romper esa columna datetime y crear nuevas columnas numéricas: una columna para el "Mes" (1-12), otra para la "Hora" (0-23) y otra para el "Día de la semana" (0-6). Luego borras el datetime original.
+
+3. Significado de las Filas
+En este conjunto de datos, cada fila representa una hora específica dentro de un día determinado. Por ejemplo, una fila resume todo lo que pasó el 15 de abril de 2011 entre las 14:00 y las 14:59: qué temperatura hacía, si estaba lloviendo, y el número exacto de bicicletas que la gente retiró de las estaciones en esos 60 minutos.
+
+4. Diccionario de Datos (Todas las columnas a detalle)
+Una vez que cargues tu archivo train.csv, te encontrarás exactamente con estas 12 columnas. Aquí te explico qué es cada una y cómo debes tratarla en tu código:
+
+datetime: La fecha y hora exacta del registro (Ej. "2011-01-01 05:00:00"). (Ruido directo para la red neuronal). Debes usar Pandas para extraer de aquí la "hora" (0-23), el "mes" y el "día de la semana", convertirlos en columnas nuevas y luego eliminar esta columna original.
+
+season: La estación del año (1: primavera, 2: verano, 3: otoño, 4: invierno). Aunque se ve como un número, en realidad representa una categoría. (Dato Pro): Aplicarle One-Hot Encoding es una excelente práctica para que el modelo no crea que el invierno (4) vale cuatro veces más que la primavera (1).
+
+holiday: Indica si el día es un festivo oficial (1) o no (0). Es una variable binaria perfecta, está lista para usarse tal cual.
+
+workingday: Indica si el día es laboral (1) o un día de descanso/fin de semana (0). También es binaria y está lista para entrar al modelo.
+
+weather: La categoría del clima al momento del registro (1: despejado, 2: nublado/niebla, 3: lluvia o nieve ligera, 4: clima extremo o tormenta fuerte). Al igual que "season", es una variable categórica disfrazada de número. Requiere One-Hot Encoding.
+
+temp: Temperatura ambiente real en grados Celsius. Es una variable continua. (Dato Pro): Debes escalarla o estandarizarla (por ejemplo, con StandardScaler de Scikit-Learn) para que los gradientes de tu red neuronal en PyTorch no se disparen y el modelo converja rápido.
+
+atemp: Sensación térmica en grados Celsius (lo que realmente siente el cuerpo). También es continua y debe escalarse. (Ojo: al estar tan relacionada matemáticamente con "temp", algunos científicos de datos eliminan una de las dos para evitar redundancia o multicolinealidad, puedes probar qué funciona mejor en tu modelo).
+
+humidity: Porcentaje de humedad relativa en el aire. Variable continua, también debes aplicarle estandarización.
+
+windspeed: Velocidad del viento. Variable continua, requiere estandarización.
+
+casual: Cantidad de alquileres realizados por usuarios no registrados que iban pasando por ahí. (¡Peligro de Data Leakage!) Debes ELIMINAR esta columna antes de entrenar. En la vida real (y en tu set de prueba) no sabrás esto por adelantado. Si la dejas, tu modelo hará trampa.
+
+registered: Cantidad de alquileres realizados por usuarios con suscripción mensual/anual. Al igual que "casual", debes ELIMINARLA estrictamente antes de pasarle tus datos de entrenamiento a PyTorch.
+
+count: La cantidad total de bicicletas alquiladas en esa hora exacta (es simplemente la suma de "casual" + "registered"). Esta columna es oro puro: es tu variable objetivo (la "Y"). Es exactamente el número que tu red neuronal tiene que aprender a predecir basándose en el clima y el calendario.
+5. Propósito para Machine Learning
+Basado en cómo se manejan algoritmos en PyTorch, el mejor uso para este dataset es:
+
+Regresión Continua: A diferencia de MIMIC-III (donde predecías un 0 o un 1 para mortalidad), aquí vas a predecir un número continuo (ejemplo: 345 bicicletas). Usarás una red neuronal profunda (Deep Learning) que tome todas las características ambientales y de tiempo, sin función de activación al final (o con una función ReLU, ya que no puedes alquilar bicicletas negativas), y medirás tu error con una función de pérdida como el Error Cuadrático Medio (MSELoss).
+
+Clasificación Multiclase (Adaptación opcional): Si en tu temario necesitas obligatoriamente practicar clasificación, puedes aplicar tu propia Ingeniería de Características sobre la columna "count". Podrías transformarla y crear 3 clases: "Demanda Baja" (0-100 bicis), "Demanda Media" (101-300 bicis) y "Demanda Alta" (más de 300 bicis). Así lo conviertes en un problema que encaja perfecto con una red neuronal que use Softmax al final.

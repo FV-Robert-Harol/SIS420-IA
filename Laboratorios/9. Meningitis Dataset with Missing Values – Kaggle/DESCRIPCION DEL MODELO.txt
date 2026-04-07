@@ -1,0 +1,54 @@
+1. Origen y Propósito del Estudio
+ "Meningitis Dataset with Missing Values", extrae del repositorio de Kaggle. este conjunto recopila datos clínicos y resultados de laboratorio reales (como análisis de sangre y del líquido cefalorraquídeo) de pacientes diagnosticados con meningitis.
+
+propósito es simular el caos de un entorno médico real. En los hospitales, los datos casi nunca están perfectos, y este conjunto está diseñado intencionalmente con valores faltantes a lo largo de sus registros. Mi objetivo es programar un flujo de trabajo que primero resuelva el problema de los datos faltantes mediante técnicas de imputación, para luego construir un modelo capaz de predecir con exactitud el nivel de riesgo y la severidad del paciente basándose en sus biomarcadores.
+
+2. Estructura de Descarga y Cómo Proceder
+Al descargar los archivos, obtuve un único documento en formato .csv que consolida toda la información.
+
+El paso más crítico aquí, tal como me anticipa el nombre del dataset, es lidiar con los valores nulos. Antes de siquiera intentar pasarle datos a PyTorch, mi código en Pandas debe iniciar con un análisis exhaustivo usando métodos como df.isnull().sum() para mapear el daño.
+
+No puedo simplemente borrar todas las filas que tengan nulos, porque perdería pacientes valiosos y destruiría mi poder estadístico. En su lugar, aplicaré estrategias de imputación: rellenaré los resultados de laboratorio faltantes utilizando la mediana (ya que en medicina un valor atípico puede sesgar la media matemática) e imputaré las columnas de texto vacías utilizando la moda (el valor más frecuente).
+
+3. Significado de las Filas
+Al explorar mi DataFrame final, interpreté que cada fila representa un historial clínico individual. Es la "fotografía médica" de un único paciente desde el momento en que se le extraen muestras hasta que se define su diagnóstico. Leyendo la fila de izquierda a derecha, puedo ver la historia completa de su edad, su género, cómo reaccionaron los niveles de su fluido espinal y su sangre ante la infección, y cómo resultó su caso.
+
+4. Diccionario de Datos (Todas las columnas a detalle)
+Para programar mi preprocesamiento, analicé rigurosamente las 15 columnas del dataset. Aquí detallo qué significa cada una y las decisiones que tomé sobre cómo procesarlas:
+
+Patient_ID (ID del paciente): Es un código de identificación único. En mi investigación tengo claro que esto es puramente administrativo, no médico. Lo eliminaré inmediatamente de mi conjunto de datos, ya que es ruido y mi red neuronal podría intentar memorizar IDs falsamente.
+
+Age (Edad): La edad en años. Es una variable numérica continua. Como maneja números altos en comparación a otros biomarcadores, le aplicaré estandarización (StandardScaler) para evitar que domine el cálculo matemático.
+
+Gender (Género): Texto que indica Male/Female. Al ser una variable categórica binaria pura, la mapearé directamente a números (0 y 1).
+
+WBC_Count (Glóbulos Blancos en LCR): Conteo de leucocitos en el líquido cefalorraquídeo. Es una variable numérica continua y un indicador crucial de infección en el cerebro. La revisaré en busca de nulos, la imputaré y la estandarizaré.
+
+Protein_Level (Nivel de Proteínas en LCR): Numérica continua. Médicamente importante porque las bacterias disparan este nivel. Requiere imputación y estandarización obligatoria.
+
+Glucose_Level (Nivel de Glucosa en LCR): Numérica continua. Requiere estandarización. (Como dato clínico: las bacterias consumen glucosa, por lo que valores bajos aquí son una señal de alarma que mi modelo debe aprender).
+
+Pathogen_Present (Presencia de Patógeno): Variable categórica que indica "Yes" o "No" respecto a si se aisló la bacteria/virus. La mapearé directamente a 1 y 0.
+
+Diagnosis (Diagnóstico Clínico): Expresado en texto. Al ser una categoría, aplicaré One-Hot Encoding (pd.get_dummies) para transformarla en columnas matemáticas.
+
+Outcome (Resultado): El desenlace de salud (Recovered, Critical, Fatal). Como expresa diferentes estados categóricos, le aplicaré One-Hot Encoding o un mapeo ordinal dependiendo de las pruebas de mi modelo.
+
+Hemoglobin (Hemoglobina): Nivel en la sangre general. Variable numérica continua. Requiere revisión de nulos y estandarización.
+
+WBC_Blood_Count (Glóbulos Blancos en Sangre): Numérica continua. Es el conteo sistémico, diferente al del líquido espinal. Requiere estandarización.
+
+Platelets (Plaquetas): Conteo de plaquetas en sangre. Numérica continua. Son números sumamente grandes (miles), por lo que si no aplico el StandardScaler aquí, destruiré los gradientes de mi red neuronal.
+
+CRP_Level (Nivel de Proteína C Reactiva): Numérica continua. Es uno de los biomarcadores más universales de inflamación en el cuerpo. Requiere estandarización.
+
+Disease (Tipo de Meningitis): Texto que especifica la variante (Bacterial, Viral, Fungal, Tubercular). Variable categórica múltiple a la que le aplicaré One-Hot Encoding para evitar que el modelo asuma falsas jerarquías.
+
+Risk_Level (Nivel de Riesgo): Esta es mi variable objetivo ("Y"), el fin último del estudio. Contiene clasificaciones en texto: Low, Medium, High. Al procesarla, le asignaré un mapeo estructurado (ejemplo: 0 para Bajo, 1 para Medio, 2 para Alto) antes de separar los datos en tensores.
+
+5. Propósito para Machine Learning
+El diseño arquitectónico de mi experimento con este dataset se basa en resolver un problema clásico de Clasificación Multiclase.
+
+A diferencia de otros análisis donde mi objetivo era predecir un desenlace binario (vivo o muerto / aprobado o rechazado), aquí mi red neuronal tendrá que aprender los umbrales fisiológicos de los biomarcadores para encasillar al paciente en tres categorías de riesgo simultáneas (Bajo, Medio, Alto).
+
+Para lograrlo, programaré mi modelo en PyTorch asegurándome de que mi última capa lineal expulse exactamente tres valores (neuronas de salida). Utilizaré una función de pérdida CrossEntropyLoss, la cual ya integra internamente el cálculo "Softmax" necesario para obtener las probabilidades de cada una de las tres clases y así darle al equipo médico el pronóstico más preciso posible.

@@ -1,0 +1,23 @@
+1. Origen y Propósito del EstudioOrigen: Este dataset fue recopilado originalmente por el profesor Dean De Cock en 2011, utilizando datos históricos extraídos directamente de la Oficina del Tasador de la ciudad de Ames, Iowa (Estados Unidos).Propósito: Se creó con un objetivo puramente académico. Durante años, el estándar educativo era el antiguo "Boston Housing Dataset" (de los años 70), pero Dean De Cock estructuró los datos de Ames para ofrecer una alternativa moderna, mucho más rica y compleja, ideal para que los estudiantes de ciencia de datos practiquen la limpieza de valores nulos, la ingeniería de características (feature engineering) y el modelado predictivo avanzado de precios.
+
+2. Significado de las FilasCada fila (registro) en este dataset representa una única venta de una propiedad residencial individual (una casa) en la ciudad de Ames, Iowa, que tuvo lugar entre los años 2006 y 2010.3. Diccionario de Datos (Columnas)
+El dataset completo tiene 79 variables explicativas, más un identificador y la variable objetivo (81 columnas en total). Debido a la extensión, aquí te detallo cómo se dividen y te explico las más importantes que debes conocer para tu preprocesamiento:Variable Objetivo (Lo que vas a predecir)
+SalePrice: El precio final de venta de la propiedad en dólares estadounidenses.
+Variables Numéricas (Dimensiones y Áreas):
+LotArea: Tamaño del terreno/lote en pies cuadrados.
+GrLivArea: Área habitable sobre el nivel del suelo en pies cuadrados.
+TotalBsmtSF: Superficie total del sótano en pies cuadrados.
+GarageArea: Tamaño del garaje en pies cuadrados.
+Variables Categóricas (Texto puro, necesitan One-Hot Encoding/Label Encoding):
+Neighborhood: El vecindario o zona física dentro de la ciudad de Ames.
+BldgType: Tipo de vivienda (Ej. Unifamiliar, Dúplex).
+HouseStyle: Estilo de la vivienda (Ej. Un piso, dos pisos).
+Foundation: Tipo de material de los cimientos (Ej. Ladrillo, Cemento).
+Variables Ordinales (Calificaciones que sí tienen un orden matemático):
+OverallQual: Califica el material general y el acabado de la casa en una escala del 1 (Muy Pobre) al 10 (Excelente).
+OverallCond: Califica la condición general de la casa del 1 al 10.
+YearBuilt: Año original de construcción.
+Preprocesamiento: anotar muchas columnas sobre piscinas (PoolQC), vallas (Fence) o callejones (Alley) con una enorme cantidad de valores NaN. En este dataset oficial, un NaN en esas columnas no es un "error de recolección", significa que "La casa no tiene piscina / no tiene valla". ¡No elimines la fila,se deben rellenar eses nulos con un valor que diga "Ninguno" o un 0!4. 
+Propósito para Machine LearningBasándonos en la naturaleza de los datos y en los archivos de tu temario, el uso estrictamente correcto para este dataset es:
+Regresión Lineal Multivariable (Tradicional o con PyTorch): Su propósito principal es predecir un valor numérico continuo (SalePrice) a partir de múltiples variables independientes (x1, x2, x3...). Encaja a la perfección con la arquitectura de tu archivo 01_regresion_lineal_pytorch.ipynb.
+Regresión Polinomial Multivariable: Como algunas variables (como el área habitable vs. precio) pueden no tener una relación perfectamente recta sino curva, aplicar una transformación polinomial también es un enfoque oficial y sumamente válido para este set.
